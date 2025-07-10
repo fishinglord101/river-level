@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html>
 <head>
   <title>River Level & Precipitation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,17 +45,19 @@
 <script>
   async function fetchLevelAndPrecip() {
     try {
-      const now = new Date();
-      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const past7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      // USGS site number
+      const site = "03532000"; // Change to your site if needed
 
-      const levelURL = https://waterdata.usgs.gov/monitoring-location/USGS-03532000/#dataTypeId=continuous-00065-0&period=P7D
+      // River Level (Gage height, feet), parameterCd=00065
+      const levelURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00065&siteStatus=all&period=P7D`;
       const levelRes = await fetch(levelURL);
       const levelData = await levelRes.json();
-      const levelValues = levelData.value.timeSeries[0].values[0].value;
+
+      const levelSeries = levelData.value.timeSeries[0];
+      const levelValues = levelSeries.values[0].value;
       const currentLevel = parseFloat(levelValues[levelValues.length - 1].value);
       const pastLevel = parseFloat(levelValues[0].value);
-      const levelUnit = levelData.value.timeSeries[0].variable.unit.unitCode || 'ft';
+      const levelUnit = levelSeries.variable.unit.unitCode || 'ft';
       const levelChange = currentLevel - pastLevel;
 
       let arrow = '';
@@ -69,20 +73,26 @@
         levelColor = 'gray';
       }
 
-      const precipURL = https://waterdata.usgs.gov/monitoring-location/USGS-03532000/#dataTypeId=continuous-00065-0&period=P7D
+      // Precipitation (parameterCd=00045)
+      const precipURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00045&siteStatus=all&period=P7D`;
       const precipRes = await fetch(precipURL);
       const precipData = await precipRes.json();
-      const precipValues = precipData.value.timeSeries[0].values[0].value;
-      let totalPrecip = 0;
-      for (const v of precipValues) {
-        const val = parseFloat(v.value);
-        if (!isNaN(val)) totalPrecip += val;
-      }
-      const precipUnit = precipData.value.timeSeries[0].variable.unit.unitCode || 'in';
 
-      document.getElementById("body").innerHTML = 
+      let totalPrecip = 0;
+      let precipUnit = 'in';
+      if (precipData.value.timeSeries.length > 0) {
+        const precipSeries = precipData.value.timeSeries[0];
+        const precipValues = precipSeries.values[0].value;
+        precipUnit = precipSeries.variable.unit.unitCode || 'in';
+        for (const v of precipValues) {
+          const val = parseFloat(v.value);
+          if (!isNaN(val)) totalPrecip += val;
+        }
+      }
+
+      document.getElementById("body").innerHTML = `
         <div class="change" style="color: ${levelColor}">
-          ${arrow} Change (24h): ${levelChange.toFixed(2)} ${levelUnit}
+          ${arrow} Change (7d): ${levelChange.toFixed(2)} ${levelUnit}
         </div>
         <div class="current">
           Current: ${currentLevel.toFixed(2)}<span class="unit"> ${levelUnit}</span>
@@ -90,7 +100,7 @@
         <div class="precip">
           7-day Precip: ${totalPrecip.toFixed(2)} ${precipUnit}
         </div>
-      ;
+      `;
     } catch (err) {
       console.error(err);
       document.getElementById("body").textContent = "Error loading data";
