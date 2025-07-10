@@ -1,21 +1,112 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>River Level Debug</title>
+  <title>River Level & Precipitation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    color: blue;
+    font-family: monospace;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex-direction: column;
+  }
+
+  .current {
+    font-size: 10vw;
+    color: blue;
+  }
+
+  .unit {
+    font-size: 3.5vw;
+    color: gray;
+  }
+
+  .change {
+    font-size: 3.8vw;
+    color: white;
+    margin-bottom: 1vh;
+  }
+
+  .precip {
+    font-size: 3.8vw;
+    color: skyblue;
+    margin-top: 1vh;
+  }
+  </style>
 </head>
 <body id="body">Loading...</body>
 <script>
-  async function fetchTest() {
+  async function fetchLevelAndPrecip() {
     try {
-      document.getElementById("body").innerHTML = "Fetching...";
-      const response = await fetch("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=03532000&parameterCd=00065&siteStatus=all&period=P7D");
-      document.getElementById("body").innerHTML = "Got a response!";
-      const json = await response.json();
-      document.getElementById("body").innerHTML = "JSON loaded!<br><pre>" + JSON.stringify(json, null, 2) + "</pre>";
+      const site = "03532000"; // USGS site number
+
+      // Fetch river level (Gage height)
+      const levelURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00065&siteStatus=all&period=P7D`;
+      const levelRes = await fetch(levelURL);
+      const levelData = await levelRes.json();
+
+      const levelSeries = levelData.value.timeSeries[0];
+      const levelValues = levelSeries.values[0].value;
+      const currentLevel = parseFloat(levelValues[levelValues.length - 1].value);
+      const pastLevel = parseFloat(levelValues[0].value);
+      const levelUnit = levelSeries.variable.unit.unitCode || 'ft';
+      const levelChange = currentLevel - pastLevel;
+
+      let arrow = '';
+      let levelColor = 'white';
+      if (levelChange > 0.01) {
+        arrow = '🔼';
+        levelColor = 'lime';
+      } else if (levelChange < -0.01) {
+        arrow = '🔽';
+        levelColor = 'red';
+      } else {
+        arrow = '➖';
+        levelColor = 'gray';
+      }
+
+      // Fetch precipitation
+      const precipURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00045&siteStatus=all&period=P7D`;
+      const precipRes = await fetch(precipURL);
+      const precipData = await precipRes.json();
+
+      let totalPrecip = 0;
+      let precipUnit = 'in';
+      if (precipData.value.timeSeries.length > 0) {
+        const precipSeries = precipData.value.timeSeries[0];
+        const precipValues = precipSeries.values[0].value;
+        precipUnit = precipSeries.variable.unit.unitCode || 'in';
+        for (const v of precipValues) {
+          const val = parseFloat(v.value);
+          if (!isNaN(val)) totalPrecip += val;
+        }
+      }
+
+      document.getElementById("body").innerHTML = `
+        <div class="change" style="color: ${levelColor}">
+          ${arrow} Change (7d): ${levelChange.toFixed(2)} ${levelUnit}
+        </div>
+        <div class="current">
+          Current: ${currentLevel.toFixed(2)}<span class="unit"> ${levelUnit}</span>
+        </div>
+        <div class="precip">
+          7-day Precip: ${totalPrecip.toFixed(2)} ${precipUnit}
+        </div>
+      `;
     } catch (err) {
-      document.getElementById("body").innerHTML = "Error:<br><pre>" + err + "</pre>";
+      document.getElementById("body").textContent = "Error loading data";
+      console.error(err);
     }
   }
-  fetchTest();
+
+  fetchLevelAndPrecip();
+  setInterval(fetchLevelAndPrecip, 60000);
 </script>
 </html>
