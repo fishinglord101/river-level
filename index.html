@@ -17,37 +17,31 @@
     text-align: center;
     flex-direction: column;
   }
-
   .current {
     font-size: 10vw;
     color: blue;
   }
-
   .unit {
     font-size: 3.5vw;
     color: gray;
   }
-
   .change {
     font-size: 3.8vw;
     color: white;
     margin-bottom: 1vh;
   }
-
   .precip {
     font-size: 3.8vw;
     color: skyblue;
     margin-top: 1vh;
   }
-</style>
+  </style>
 </head>
 <body id="body">Loading...</body>
 <script>
   async function fetchLevelAndPrecip() {
     try {
-      // USGS site number
-      const site = "03532000"; // Change to your site if needed
-
+      const site = "03532000"; // USGS site number
       // River Level (Gage height, feet), parameterCd=00065
       const levelURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00065&siteStatus=all&period=P7D`;
       const levelRes = await fetch(levelURL);
@@ -106,8 +100,10 @@
       document.getElementById("body").textContent = "Error loading data";
     }
   }
-
   fetchLevelAndPrecip();
+  setInterval(fetchLevelAndPrecip, 60000);
+</script>
+</html>
   setInterval(fetchLevelAndPrecip, 60000);
 </script>
 </html>
