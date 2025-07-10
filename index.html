@@ -46,9 +46,11 @@
   async function fetchLevelAndPrecip() {
     try {
       const site = "03532000"; // USGS site number
+      const now = new Date();
+      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Fetch river level (Gage height)
-      const levelURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00065&siteStatus=all&period=P7D`;
+      // Fetch river level for past 24 hours
+      const levelURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00065&startDT=${past24h.toISOString()}&endDT=${now.toISOString()}`;
       const levelRes = await fetch(levelURL);
       const levelData = await levelRes.json();
 
@@ -72,8 +74,8 @@
         levelColor = 'gray';
       }
 
-      // Fetch precipitation
-      const precipURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00045&siteStatus=all&period=P7D`;
+      // Fetch precipitation for past 7 days
+      const precipURL = `https://waterservices.usgs.gov/nwis/iv/?format=json&sites=${site}&parameterCd=00045&period=P7D`;
       const precipRes = await fetch(precipURL);
       const precipData = await precipRes.json();
 
@@ -91,7 +93,7 @@
 
       document.getElementById("body").innerHTML = `
         <div class="change" style="color: ${levelColor}">
-          ${arrow} Change (7d): ${levelChange.toFixed(2)} ${levelUnit}
+          ${arrow} Change (24h): ${levelChange.toFixed(2)} ${levelUnit}
         </div>
         <div class="current">
           Current: ${currentLevel.toFixed(2)}<span class="unit"> ${levelUnit}</span>
