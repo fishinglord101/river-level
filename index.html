@@ -47,7 +47,7 @@
       const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const past7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      const levelURL = https://waterservices.usgs.gov/nwis/iv/?format=json&sites=03532000&parameterCd=00065&startDT=${past24h.toISOString()}&endDT=${now.toISOString()};
+      const levelURL = https://waterdata.usgs.gov/monitoring-location/USGS-03532000/#dataTypeId=continuous-00065-0&period=P7D
       const levelRes = await fetch(levelURL);
       const levelData = await levelRes.json();
       const levelValues = levelData.value.timeSeries[0].values[0].value;
@@ -69,7 +69,7 @@
         levelColor = 'gray';
       }
 
-      const precipURL = https://waterservices.usgs.gov/nwis/iv/?format=json&sites=03532000&parameterCd=00045&startDT=${past7d.toISOString()}&endDT=${now.toISOString()};
+      const precipURL = https://waterdata.usgs.gov/monitoring-location/USGS-03532000/#dataTypeId=continuous-00065-0&period=P7D
       const precipRes = await fetch(precipURL);
       const precipData = await precipRes.json();
       const precipValues = precipData.value.timeSeries[0].values[0].value;
